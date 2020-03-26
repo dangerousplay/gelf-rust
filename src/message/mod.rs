@@ -353,6 +353,7 @@ mod test {
 
     #[test]
     fn test_parse_default_values() {
+
         let raw_message = r#"
         {"version": "1.1",
         "short_message": "Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel",
