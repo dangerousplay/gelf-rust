@@ -68,11 +68,16 @@ impl Logger {
     /// The logger will automatically add `default_metadata` fields to the message
     /// if missing in the passed `Message`.
     pub fn log_message(&self, msg: Message) {
-        let result = self.backend.log_message(WireMessage::new(msg, &self));
+        let result = self.try_log_message(msg);
 
         if result.is_err() && self.panic_on_error {
             panic!(result.unwrap_err());
         }
+    }
+
+    /// Try to log a message via the logger's transport to a GELF server returning any error.
+    pub fn try_log_message(&self, msg: Message) -> Result<()> {
+        self.backend.log_message(WireMessage::new(msg, &self))
     }
 
     /// Return the hostname used for GELF's `host`-field
