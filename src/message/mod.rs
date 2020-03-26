@@ -28,8 +28,9 @@ mod wire_message;
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Message<'a> {
     short_message: Cow<'a, str>,
+    #[serde(default)]
     full_message: Option<Cow<'a, str>>,
-    #[serde(deserialize_with = "parse_unix_seconds")]
+    #[serde(deserialize_with = "parse_unix_seconds", default)]
     timestamp: Option<DateTime<Utc>>,
     level: Level,
     #[serde(flatten, with = "prefix_metadata")]
@@ -344,6 +345,25 @@ mod test {
         assert!(actual_timestamp.nanosecond() < 108_120_000);
 
         assert_eq!(actual_message.full_message().as_ref().expect("Full Message"), "Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel\n");
+        assert_eq!(actual_message.short_message(), "Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel");
+        assert_eq!(actual_message.level(), Level::Informational);
+        assert_eq!(actual_message.metadata("thread_name").expect("thread name"), "Thread-11");
+        assert_eq!(actual_message.metadata("logger_name").expect("logger name"), "org.springframework.integration.endpoint.EventDrivenConsumer");
+    }
+
+    #[test]
+    fn test_parse_default_values() {
+        let raw_message = r#"
+        {"version": "1.1",
+        "short_message": "Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel",
+        "level": 6,
+        "_thread_name": "Thread-11",
+        "_logger_name": "org.springframework.integration.endpoint.EventDrivenConsumer"}
+        "#;
+
+        let actual_message: Message = serde_json::from_str(raw_message).expect("Parse with success");
+
+        assert_eq!(actual_message.short_message().as_ref(), "Removing {logging-channel-adapter:_org.springframework.integration.errorLogger} as a subscriber to the 'errorChannel' channel");
 
         assert_eq!(actual_message.level(), Level::Informational);
         assert_eq!(actual_message.metadata("thread_name").expect("thread name"), "Thread-11");
